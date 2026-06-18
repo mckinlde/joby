@@ -10,6 +10,7 @@ Referenced requirements: 8.4, 8.6, 8.11, 8.12, 8.13, 8.15, 8.19
 
 from __future__ import annotations
 
+from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
@@ -18,6 +19,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ip_range_ping_diff.benchmark.harness import (
+    run_bash_benchmark,
+    run_c_benchmark,
+    run_python_benchmark,
+    run_rust_benchmark,
+)
 from ip_range_ping_diff.diff_reporter import DiffReporter
 from ip_range_ping_diff.gui.color_legend import ColorLegend
 from ip_range_ping_diff.gui.control_panel import ControlPanel
@@ -113,6 +120,23 @@ class MainWindow(QMainWindow):
             self._on_response_under_load
         )
 
+        # Benchmark button signals
+        self._control_panel.bench_python_clicked.connect(
+            lambda: self._run_benchmark("python")
+        )
+        self._control_panel.bench_bash_clicked.connect(
+            lambda: self._run_benchmark("bash")
+        )
+        self._control_panel.bench_c_clicked.connect(
+            lambda: self._run_benchmark("c")
+        )
+        self._control_panel.bench_rust_clicked.connect(
+            lambda: self._run_benchmark("rust")
+        )
+        self._control_panel.bench_all_clicked.connect(
+            lambda: self._run_benchmark("all")
+        )
+
         # Scan controller signals → UI updates
         self._scan_controller.result_received.connect(
             self._on_result_received
@@ -146,6 +170,64 @@ class MainWindow(QMainWindow):
     def _on_response_under_load(self) -> None:
         """Handle Response Under Load button click."""
         self._start_scan(ScanMode.RESPONSE_UNDER_LOAD)
+
+    def _run_benchmark(self, strategy: str) -> None:
+        """Run a benchmark for the specified language/strategy.
+
+        Runs on a background thread to keep the GUI responsive.
+        Results are displayed in the results panel.
+
+        Args:
+            strategy: One of "python", "bash", "c", "rust", or "all".
+        """
+        import threading
+
+        # Extract subnet prefixes from the GUI fields
+        subnet_a = self._control_panel.get_subnet_a().split(".0/24")[0]
+        subnet_b = self._control_panel.get_subnet_b().split(".0/24")[0]
+
+        self._set_buttons_enabled(False)
+        self._results_panel.clear()
+        self._results_panel.set_benchmark_status("Running benchmark...")
+
+        def _worker() -> None:
+            results: dict[str, float | str] = {}
+            strategies = {
+                "python": ("Python (subprocess)", run_python_benchmark),
+                "bash": ("Bash (xargs)", run_bash_benchmark),
+                "c": ("C (fork/exec)", run_c_benchmark),
+                "rust": ("Rust (threads)", run_rust_benchmark),
+            }
+
+            if strategy == "all":
+                targets = list(strategies.items())
+            else:
+                targets = [(strategy, strategies[strategy])]
+
+            for key, (name, runner) in targets:
+                try:
+                    elapsed = runner(subnet_a, subnet_b)
+                    results[name] = f"{elapsed:.3f}s"
+                except (FileNotFoundError, RuntimeError) as e:
+                    results[name] = f"SKIPPED ({e})"
+
+            # Update GUI from main thread via signal-safe approach
+            from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+            # Use a simple approach: store results and trigger update
+            self._bench_results = results
+            QMetaObject.invokeMethod(
+                self, "_on_benchmark_done", Qt.ConnectionType.QueuedConnection
+            )
+
+        thread = threading.Thread(target=_worker, daemon=True)
+        thread.start()
+
+    @Slot()
+    def _on_benchmark_done(self) -> None:
+        """Handle benchmark completion — update UI with results."""
+        results = getattr(self, "_bench_results", {})
+        self._results_panel.set_benchmark_results(results)
+        self._set_buttons_enabled(True)
 
     def _start_scan(self, mode: ScanMode) -> None:
         """Initiate a scan with the given mode using control panel values.
