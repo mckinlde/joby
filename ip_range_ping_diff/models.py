@@ -23,6 +23,7 @@ class ScanMode(Enum):
     PING_ONCE = "ping-once"
     PING_RETRY = "ping-retry"
     SEQUENTIAL = "sequential"
+    SEQUENTIAL_LOOP = "sequential-loop"
     PACKET_LOSS = "packet-loss"
     JITTER = "jitter"
     RESPONSE_UNDER_LOAD = "load"

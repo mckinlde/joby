@@ -65,6 +65,7 @@ class ControlPanel(QWidget):
     ping_once_clicked = Signal()
     ping_retry_clicked = Signal()
     sequential_clicked = Signal()
+    sequential_loop_clicked = Signal()
     packet_loss_clicked = Signal()
     jitter_clicked = Signal()
     response_under_load_clicked = Signal()
@@ -211,6 +212,7 @@ class ControlPanel(QWidget):
         self.ping_once_button = QPushButton("Ping Once")
         self.ping_retry_button = QPushButton("Ping Retry")
         self.sequential_button = QPushButton("Sequential")
+        self.sequential_loop_button = QPushButton("Sequential Loop")
         self.packet_loss_button = QPushButton("Packet Loss")
         self.jitter_button = QPushButton("Jitter")
         self.response_under_load_button = QPushButton("Response Under Load")
@@ -219,10 +221,14 @@ class ControlPanel(QWidget):
         self.sequential_button.setToolTip(
             "Single-thread, one host at a time. Minimal CPU/memory usage."
         )
+        self.sequential_loop_button.setToolTip(
+            "Continuously loops over all hosts. Use as a live reachability monitor."
+        )
 
         buttons_layout.addWidget(self.ping_once_button)
         buttons_layout.addWidget(self.ping_retry_button)
         buttons_layout.addWidget(self.sequential_button)
+        buttons_layout.addWidget(self.sequential_loop_button)
         buttons_layout.addWidget(self.packet_loss_button)
         buttons_layout.addWidget(self.jitter_button)
         buttons_layout.addWidget(self.response_under_load_button)
@@ -259,6 +265,7 @@ class ControlPanel(QWidget):
         self.ping_once_button.clicked.connect(self._on_ping_once)
         self.ping_retry_button.clicked.connect(self._on_ping_retry)
         self.sequential_button.clicked.connect(self._on_sequential)
+        self.sequential_loop_button.clicked.connect(self._on_sequential_loop)
         self.packet_loss_button.clicked.connect(self._on_packet_loss)
         self.jitter_button.clicked.connect(self._on_jitter)
         self.response_under_load_button.clicked.connect(
@@ -286,6 +293,11 @@ class ControlPanel(QWidget):
         """Validate common fields and emit sequential_clicked."""
         if self._validate_common():
             self.sequential_clicked.emit()
+
+    def _on_sequential_loop(self) -> None:
+        """Validate common fields and emit sequential_loop_clicked."""
+        if self._validate_common():
+            self.sequential_loop_clicked.emit()
 
     def _on_packet_loss(self) -> None:
         """Validate common + diagnostic fields and emit packet_loss_clicked."""
@@ -517,6 +529,7 @@ class ControlPanel(QWidget):
         self.ping_once_button.setEnabled(enabled)
         self.ping_retry_button.setEnabled(enabled)
         self.sequential_button.setEnabled(enabled)
+        self.sequential_loop_button.setEnabled(enabled)
         self.packet_loss_button.setEnabled(enabled)
         self.jitter_button.setEnabled(enabled)
         self.response_under_load_button.setEnabled(enabled)

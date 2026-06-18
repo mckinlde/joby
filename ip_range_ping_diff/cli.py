@@ -101,7 +101,7 @@ def parse_cli_args(argv: list[str] | None = None) -> CLIConfig:
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["ping-once", "ping-retry", "sequential", "packet-loss", "jitter", "load"],
+        choices=["ping-once", "ping-retry", "sequential", "sequential-loop", "packet-loss", "jitter", "load"],
         default="ping-once",
         help="Scan mode (default: ping-once)",
     )

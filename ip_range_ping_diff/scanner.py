@@ -196,12 +196,11 @@ class PingScanner:
                 retry_delay_ms=0,
             )
         elif self.scan_mode == ScanMode.SEQUENTIAL:
-            # Sequential mode: single attempt per host, no retries,
-            # minimal resource footprint
+            # Sequential mode: single-thread, respects user retry settings
             executor = PingExecutor(
                 timeout=self.timeout,
-                retries=0,
-                retry_delay_ms=0,
+                retries=self.retries,
+                retry_delay_ms=self.retry_delay_ms,
             )
         else:
             # PING_RETRY mode
@@ -215,21 +214,30 @@ class PingScanner:
         results_a: dict[int, PingResult] = {}
         results_b: dict[int, PingResult] = {}
 
-        if self.scan_mode == ScanMode.SEQUENTIAL:
+        if self.scan_mode in (ScanMode.SEQUENTIAL, ScanMode.SEQUENTIAL_LOOP):
             # Sequential mode: single thread, one host at a time.
             # Minimal CPU/memory footprint — suitable for machines
             # running other critical software.
-            for ip, octet in hosts_a:
-                result = executor.ping(ip, octet, self._prefix_a)
-                results_a[octet] = result
-                if self.on_result is not None:
-                    self.on_result(result)
+            # SEQUENTIAL_LOOP continuously iterates until stopped externally.
+            loop_forever = self.scan_mode == ScanMode.SEQUENTIAL_LOOP
+            iteration = 0
 
-            for ip, octet in hosts_b:
-                result = executor.ping(ip, octet, self._prefix_b)
-                results_b[octet] = result
-                if self.on_result is not None:
-                    self.on_result(result)
+            while True:
+                iteration += 1
+                for ip, octet in hosts_a:
+                    result = executor.ping(ip, octet, self._prefix_a)
+                    results_a[octet] = result
+                    if self.on_result is not None:
+                        self.on_result(result)
+
+                for ip, octet in hosts_b:
+                    result = executor.ping(ip, octet, self._prefix_b)
+                    results_b[octet] = result
+                    if self.on_result is not None:
+                        self.on_result(result)
+
+                if not loop_forever:
+                    break
         else:
             # Concurrent mode: scan both subnets using ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=self.thread_count) as pool:

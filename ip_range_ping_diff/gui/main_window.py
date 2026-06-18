@@ -115,6 +115,7 @@ class MainWindow(QMainWindow):
         self._control_panel.ping_once_clicked.connect(self._on_ping_once)
         self._control_panel.ping_retry_clicked.connect(self._on_ping_retry)
         self._control_panel.sequential_clicked.connect(self._on_sequential)
+        self._control_panel.sequential_loop_clicked.connect(self._on_sequential_loop)
         self._control_panel.packet_loss_clicked.connect(self._on_packet_loss)
         self._control_panel.jitter_clicked.connect(self._on_jitter)
         self._control_panel.response_under_load_clicked.connect(
@@ -163,6 +164,10 @@ class MainWindow(QMainWindow):
     def _on_sequential(self) -> None:
         """Handle Sequential button click."""
         self._start_scan(ScanMode.SEQUENTIAL)
+
+    def _on_sequential_loop(self) -> None:
+        """Handle Sequential Loop button click."""
+        self._start_scan(ScanMode.SEQUENTIAL_LOOP)
 
     def _on_packet_loss(self) -> None:
         """Handle Packet Loss button click."""
