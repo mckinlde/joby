@@ -1,0 +1,8 @@
+[package]
+name = "ping_rust"
+version = "0.1.0"
+edition = "2021"
+description = "Rust ping benchmark for IP range scanning"
+
+[dependencies]
+# No external dependencies needed - uses std::thread and std::process
