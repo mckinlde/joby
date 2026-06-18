@@ -1,1 +1,3 @@
 __pycache__/
+ip_range_ping_diff/benchmark/ping_rust/target/
+ip_range_ping_diff/benchmark/ping_c/ping_scan
