@@ -199,6 +199,57 @@ sudo setcap cap_net_raw+ep ./ping_scan
 sudo python3 -m ip_range_ping_diff --cli --mode ping-once
 ```
 
+## Design Direction: Minimal-Resource Continuous Monitoring
+
+### The problem
+
+The concurrent scan modes (Ping Once, Ping Retry) are fast — they finish in seconds — but they're resource-hungry: 64 threads, 64 simultaneous subprocess spawns, context switching, memory for thread stacks. On a machine running flight control software, avionics processing, or other critical workloads, that burst of activity is unacceptable.
+
+### Sequential and Sequential Loop modes
+
+These modes take the opposite approach: **one ping at a time, one thread, one subprocess**. The CPU barely notices.
+
+| Mode | Behavior | Use case |
+|------|----------|----------|
+| Sequential | Single pass through all hosts, then done | One-shot check on a busy machine |
+| Sequential Loop | Continuous passes forever | Background reachability daemon |
+
+Both modes honor user-configured timeout, retries, and retry delay — so you can tune the tradeoff between thoroughness and scan duration.
+
+### What Sequential Loop enables
+
+Sequential Loop is designed as a **utility that other programs consume**. It maintains a continuously-updated view of which hosts are reachable:
+
+1. **Live reachability map**: Each pass updates the result for every host. The GUI dot grid reflects the latest known state — hosts that go down turn red/white on the next pass.
+
+2. **Last-reached timestamps**: Since each host is re-pinged every pass, you always know "when was this host last confirmed alive?" A host that was green 2 minutes ago but hasn't been re-checked yet is stale — a host that was green 5 seconds ago is fresh.
+
+3. **Intermittent failure detection**: Over many passes, a host that alternates between reachable and unreachable reveals itself as flaky — something a single-pass scan would miss if it happened to catch the "up" moment.
+
+4. **Integration with monitoring systems**: The CLI `--mode sequential-loop` can pipe JSON updates to a log aggregator, Prometheus exporter, or any system that wants periodic reachability state without running its own ping infrastructure.
+
+### Resource profile
+
+```
+Sequential/Loop modes:
+  Threads:           1 (main thread only)
+  Peak subprocesses: 1 (one ping at a time)
+  Memory overhead:   ~negligible beyond Python interpreter
+  CPU profile:       idle 99%+ (sleeping during ping timeout)
+
+vs. Concurrent modes:
+  Threads:           64 (default ThreadPoolExecutor workers)
+  Peak subprocesses: 64 simultaneous ping processes
+  Memory overhead:   ~64 thread stacks + futures + result buffers
+  CPU profile:       burst of context switching during scan
+```
+
+### Tradeoff: time vs. resources
+
+A full Sequential scan of 508 hosts with 1s timeout takes up to ~508s worst case (all unreachable). On a healthy LAN where hosts respond in <1ms, it completes in seconds. The key insight: **on a LAN, reachable hosts respond instantly, so sequential scanning is only slow for unreachable hosts** — and those are exactly the ones you want to know about.
+
+For Sequential Loop, the scan never "completes" — it continuously cycles. The staleness of any given host's status equals `(number_of_hosts × avg_ping_time)` — on a healthy /24 with 254 hosts responding in 1ms each, that's ~0.25 seconds per full cycle.
+
 ## Requirements
 
 - Python 3.11+
