@@ -61,6 +61,8 @@ class DotStatus(Enum):
     REACHABLE_BOTH = "green"  # Reachable on both subnets
     ASYMMETRIC = "red"  # Reachable on one subnet only
     UNREACHABLE_BOTH = "white"  # Unreachable on both subnets
+    PENDING_REACHABLE = "blue"  # Reachable on one subnet, other not yet scanned
+    PENDING_UNREACHABLE = "dark_grey"  # Unreachable on one subnet, other not yet scanned
     # Packet Loss gradient coloring
     LOSS_NONE = "green"  # 0% packet loss
     LOSS_LOW = "yellow"  # 1–49% packet loss

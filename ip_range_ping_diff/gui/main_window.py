@@ -424,17 +424,17 @@ class MainWindow(QMainWindow):
             else:
                 return DotStatus.ASYMMETRIC
         elif has_a:
-            # Only subnet A reported so far - show partial status
+            # Only subnet A reported so far — show pending state
             if self._results_a[octet] == ReachabilityStatus.REACHABLE:
-                return DotStatus.REACHABLE_BOTH  # Tentative green
+                return DotStatus.PENDING_REACHABLE
             else:
-                return DotStatus.UNREACHABLE_BOTH  # Tentative white
+                return DotStatus.PENDING_UNREACHABLE
         elif has_b:
-            # Only subnet B reported so far - show partial status
+            # Only subnet B reported so far — show pending state
             if self._results_b[octet] == ReachabilityStatus.REACHABLE:
-                return DotStatus.REACHABLE_BOTH  # Tentative green
+                return DotStatus.PENDING_REACHABLE
             else:
-                return DotStatus.UNREACHABLE_BOTH  # Tentative white
+                return DotStatus.PENDING_UNREACHABLE
         else:
             return DotStatus.NOT_SCANNED
 

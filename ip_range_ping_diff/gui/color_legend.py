@@ -18,6 +18,8 @@ from ip_range_ping_diff.models import DotStatus, ScanMode
 # Legend entries for standard ping modes (Ping Once, Ping Retry)
 _STANDARD_LEGEND: list[tuple[DotStatus, str]] = [
     (DotStatus.NOT_SCANNED, "Not scanned"),
+    (DotStatus.PENDING_REACHABLE, "Reachable on one subnet, other pending"),
+    (DotStatus.PENDING_UNREACHABLE, "Unreachable on one subnet, other pending"),
     (DotStatus.REACHABLE_BOTH, "Reachable on both subnets"),
     (DotStatus.ASYMMETRIC, "Asymmetric (one subnet only)"),
     (DotStatus.UNREACHABLE_BOTH, "Unreachable on both subnets"),
