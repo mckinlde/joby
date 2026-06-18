@@ -114,6 +114,7 @@ class MainWindow(QMainWindow):
         # Button signals → scan initiation
         self._control_panel.ping_once_clicked.connect(self._on_ping_once)
         self._control_panel.ping_retry_clicked.connect(self._on_ping_retry)
+        self._control_panel.sequential_clicked.connect(self._on_sequential)
         self._control_panel.packet_loss_clicked.connect(self._on_packet_loss)
         self._control_panel.jitter_clicked.connect(self._on_jitter)
         self._control_panel.response_under_load_clicked.connect(
@@ -158,6 +159,10 @@ class MainWindow(QMainWindow):
     def _on_ping_retry(self) -> None:
         """Handle Ping Retry button click."""
         self._start_scan(ScanMode.PING_RETRY)
+
+    def _on_sequential(self) -> None:
+        """Handle Sequential button click."""
+        self._start_scan(ScanMode.SEQUENTIAL)
 
     def _on_packet_loss(self) -> None:
         """Handle Packet Loss button click."""
